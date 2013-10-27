@@ -17,9 +17,16 @@
 (defn search-with [search-key]
   [{msg/type :search-with msg/topic [:search :text] :value search-key}])
 
+(defn handle-search-response [old inputs]
+  (.log js/console "Received response from server")
+  (:response inputs))
+
 (def example-app
   {:version 2
-   :transform [[:search-with [:search :text] search-text-fn]]
+   :transform [[:search-with [:search :text] search-text-fn]
+               [:search-result [:search :response] handle-search-response]]
    :effect #{[#{[:search :text]} search-with :single-val]}
-   :emit [{:in #{[:*]} :fn (app/default-emitter []) :init init-search-box}]})
+   :emit [{:init init-search-box}
+          ;; {:in #{[:search :*]} (app/default-emitter [])}
+          {:in #{[:*]} :fn (app/default-emitter [])}]})
 

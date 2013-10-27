@@ -31,5 +31,9 @@
                       (doseq [m new-msgs]
                         (p/put-message input-queue m))))))))
 
+(defn update-search-result [& args]
+  (.log js/console "Got search result"))
+
 (defn render-config []
-  [[:transform-enable [:setup-search] enable-search]])
+  [[:transform-enable [:setup-search] enable-search]
+   [:value [:search :response] update-search-result]])
