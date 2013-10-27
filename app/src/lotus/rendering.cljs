@@ -24,12 +24,12 @@
   (let [todo-input (dom/by-id "search-box")]
     (de/listen! todo-input :keyup
                 (fn [e]
+                  (let [details (dom/value todo-input)
+                        new-msgs (msgs/fill :search-with messages {:search-text details})]
+                    (doseq [m new-msgs]
+                      (p/put-message input-queue m)))
                   (when (= (.-keyCode (.-evt e)) 13)
-                    (let [details (dom/value todo-input)
-                          new-msgs (msgs/fill :search-with messages {:search-text details})]
-                      (dom/set-value! todo-input "")
-                      (doseq [m new-msgs]
-                        (p/put-message input-queue m))))))))
+                    (dom/set-value! todo-input ""))))))
 
 (defn update-search-result [r [_ _ _ messages] input-queue]
   (let [new-response (apply str (map (fn [{result :result}]
