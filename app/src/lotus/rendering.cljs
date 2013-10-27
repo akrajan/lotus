@@ -32,9 +32,9 @@
                     (dom/set-value! todo-input ""))))))
 
 (defn update-search-result [r [_ _ _ messages] input-queue]
-  (let [new-response (apply str (map (fn [{result :result}]
-                             (str "<li>" result "</li>"))
-                           messages))
+  (let [new-response (apply str (mapv (fn [{result :result}]
+                                       (str "<li>" result "</li>"))
+                                     messages))
         ac-menu (dom/by-id "autocomplete-menu")]
     (dom/destroy! (dc/sel "#autocomplete-menu li"))
     (dom/remove-class! ac-menu "hidden")
