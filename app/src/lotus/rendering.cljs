@@ -31,8 +31,14 @@
                       (doseq [m new-msgs]
                         (p/put-message input-queue m))))))))
 
-(defn update-search-result [& args]
-  (.log js/console "Got search result"))
+(defn update-search-result [r [_ _ _ messages] input-queue]
+  (let [new-response (apply str (map (fn [{result :result}]
+                             (str "<li>" result "</li>"))
+                           messages))
+        ac-menu (dom/by-id "autocomplete-menu")]
+    (dom/destroy! (dc/sel "#autocomplete-menu li"))
+    (dom/remove-class! ac-menu "hidden")
+    (dom/append! (dom/by-id "autocomplete-menu") new-response)))
 
 (defn render-config []
   [[:transform-enable [:setup-search] enable-search]
