@@ -40,11 +40,12 @@
 
 (defn dummy-search-fn [key]
   (let [key (.toLowerCase key)]
-    (or (prefix-match key search-map) [])))
+    (if (empty? key)
+      []
+      (or (prefix-match key search-map) []))))
 
 (defn services-fn [message input-queue]
   (let [search-response (dummy-search-fn (:value message))]
-    (.log js/console (str "Sending message to server: " search-response))
     (p/put-message input-queue
                    {msg/type :search-result
                     msg/topic [:search :response]
