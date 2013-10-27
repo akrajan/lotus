@@ -26,8 +26,10 @@
                 (fn [e]
                   (let [details (dom/value todo-input)
                         new-msgs (msgs/fill :search-with messages {:search-text details})]
-                    (doseq [m new-msgs]
-                      (p/put-message input-queue m)))
+                    (if (empty? details)
+                      (dom/destroy! (dc/sel "#autocomplete-menu li"))
+                      (doseq [m new-msgs]
+                        (p/put-message input-queue m))))
                   (when (= (.-keyCode (.-evt e)) 13)
                     (dom/set-value! todo-input ""))))))
 

@@ -6,7 +6,6 @@
 (defn set-value-transform [old-value message]
   (:value message))
 
-
 (defn init-search-box [_]
   [[:transform-enable [:setup-search] :search-with
     [{msg/topic [:search :text] (msg/param :search-text) ""}]]])
@@ -18,8 +17,6 @@
   [{msg/type :search-with msg/topic [:search :text] :value search-key}])
 
 (defn handle-search-response [old inputs]
-  
-  (.log js/console "Received response from server: " (:response inputs))
   (:response inputs))
 
 (def example-app
