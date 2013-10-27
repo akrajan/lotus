@@ -1,5 +1,9 @@
 (ns lotus.rendering
   (:require [domina :as dom]
+            [domina.css :as dc]
+            [domina.events :as de]
+            [io.pedestal.app.messages :as msgs]
+            [io.pedestal.app.protocols :as p]
             [io.pedestal.app.render.push :as render]
             [io.pedestal.app.render.push.templates :as templates]
             [io.pedestal.app.render.push.handlers.automatic :as d])
@@ -16,7 +20,16 @@
 (defn render-message [renderer [_ path _ new-value] transmitter]
   (templates/update-t renderer path {:message new-value}))
 
+(defn enable-search [r [_ _ _ messages] input-queue]
+  (let [todo-input (dom/by-id "search-box")]
+    (de/listen! todo-input :keyup
+                (fn [e]
+                  (when (= (.-keyCode (.-evt e)) 13)
+                    (let [details (dom/value todo-input)
+                          new-msgs (msgs/fill :search-with messages {:search-text details})]
+                      (dom/set-value! todo-input "")
+                      (doseq [m new-msgs]
+                        (p/put-message input-queue m))))))))
+
 (defn render-config []
-  [[:node-create  [:greeting] render-page]
-   [:node-destroy   [:greeting] d/default-exit]
-   [:value [:greeting] render-message]])
+  [[:transform-enable [:setup-search] enable-search]])
