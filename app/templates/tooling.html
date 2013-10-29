@@ -15,6 +15,8 @@
     <link href="/stylesheets/bootstrap.css" rel="stylesheet">
     <link href="/stylesheets/pedestal.css" rel="stylesheet">
     <link href="/lotus.css" rel="stylesheet">
+    <link href="/assets/themes/tom/css/syntax.css" rel="stylesheet">
+    <link href="/assets/themes/tom/css/screen.css" rel="stylesheet">
     
     <!-- Add xpath support to IE. Domina needs this -->
     <!--[if IE]>
@@ -24,14 +26,18 @@
   </head>
 
   <body>
-
     <div class="container">
-      Search
-      <span class="combo-box">
-	<input id="search-box" type="text"/>
-	<ul id="autocomplete-menu" class="hidden">
-	</ul>
-      </span>
+    <div id="ac-ex0">
+      <div class="ac-container">
+        <div class="section">
+          <label>Query:</label>
+          <span class="combo-box">
+            <input id="autocomplete" type="text"/>
+            <ul id="autocomplete-menu" class="hidden"></ul>
+          </span>
+        </div>
+      </div>
+
       <div id="content"></div>
 
       <div id="options"></div>
