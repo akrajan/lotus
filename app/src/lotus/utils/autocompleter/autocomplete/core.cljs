@@ -53,28 +53,42 @@
                data-items nil
                focused false]
           (let [[v sc] (alts! [raw cancel focus query select])]
+            (.log js/console "focused = " focused "view-items = " view-items)
+            (cond
+             (= sc raw) (.log js/console "raw " " v =" (str v))
+             (= sc channel) (.log js/console "cancel"" v =" (str v))
+             (= sc focus) (.log js/console "focus"" v =" (str v))
+             (= sc query) (.log js/console "query"" v =" (str v))
+             (= sc select) (.log js/console "select"" v =" (str v)))
+            
             (cond
              (= sc focus)
-             (recur view-items data-items true)
+             (do
+               (.log js/console "inside focus")
+               (recur view-items data-items true))
 
              (= sc cancel)
-             (do (-hide! menu)
+             (do (.log js/console "inside cancel")
+                 (-hide! menu)
                  (>! (:query-ctrl opts) (h/now))
                  (recur view-items data-items (not= v :blur)))
 
              (and focused (= sc query))
-             (let [[v c] (alts! [cancel ((:completions opts) (second v))])]
-               (if (or (= c cancel) (zero? (count v)))
-                 (do (-hide! menu)
-                     (recur nil nil (not= v :blur)))
-                 (do
-                   (-show! menu)
-                   (let [view-data (map first v)
-                         select-data (map second v)]
-                     (.log js/console "view-data = " (str view-data))
-                     (.log js/console "select-data = " (str select-data))
-                    (-set-items! menu view-data)
-                    (recur view-data select-data focused)))))
+             (do (.log js/console "FOCUSED & QUERIED")
+                 (let [[v c] (alts! [cancel ((:completions opts) (second v))])]
+                   (.log js/console "inside focus")
+                   (if (or (= c cancel) (zero? (count v)))
+                     (do (.log js/console "inside focus A")
+                         (-hide! menu)
+                         (recur nil nil (not= v :blur)))
+                     (do (.log js/console "inside focus B")
+                         (-show! menu)
+                         (let [view-data (map first v)
+                               select-data (map second v)]
+                           (.log js/console "view-data = " (str view-data))
+                           (.log js/console "select-data = " (str select-data))
+                           (-set-items! menu view-data)
+                           (recur view-data select-data focused))))))
 
              (and view-items (= sc select))
              (let [_ (reset! (:selection-state opts) true)
@@ -219,13 +233,13 @@
 ;; ;; =============================================================================
 ;; ;; Example
 
-;; (defn wikipedia-search [query]
-;;   (go
-;;    (let [response (<! (r/jsonp (str base-url query)))]
-;;      (let [completions (nth response 1)]
-;;        (mapv vector
-;;              completions
-;;              (repeat "hello"))))))
+(defn wikipedia-search [query]
+  (go
+   (let [response (<! (r/jsonp (str base-url query)))]
+     (let [completions (nth response 1)]
+       (mapv vector
+             completions
+             (repeat "hello"))))))
 
 ;; ;; (defn ^:export main []
 ;; ;;   (let [ac (html-autocompleter
