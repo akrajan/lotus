@@ -3,6 +3,7 @@
             [domina.css :as dc]
             [domina.events :as de]
             [lotus.utils.autocompleter.autocomplete.core :as autocomplete]
+            [cljs.core.async :refer [>! <! alts! chan sliding-buffer put! to-chan onto-chan close!]]
             [io.pedestal.app.messages :as msgs]
             [io.pedestal.app.protocols :as p]
             [io.pedestal.app.render.push :as render]
@@ -35,29 +36,32 @@
 ;;                   (when (= (.-keyCode (.-evt e)) 13)
 ;;                     (dom/set-value! todo-input ""))))))
 
+(def completions-ref (atom (chan)))
+
+(defn get-completions [messages input-queue]
+  (fn [query]
+    (doseq [m (msgs/fill :search-with messages {"search-text" query})]
+      (p/put-message input-queue m))
+    @completions-ref))
 
 (defn enable-search [r [_ _ _ messages] input-queue]
   (.log js/console "inside enable-search")
   (let [ac (autocomplete/html-autocompleter
             (dom/by-id "autocomplete")
             (dom/by-id "autocomplete-menu")
-            autocomplete/wikipedia-search
+            #(go [["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"]])
             750)]
     (.log js/console "before go block")
-    (go (while true (<! ac)))))
+    (go (while true
+          (<! ac)))))
 
 (defn update-search-result [r [_ _ _ messages] input-queue]
-  (let [new-response (apply str (mapv (fn [{result :result}]
-                                       (str "<li>" result "</li>"))
-                                     messages))
-        ac-menu (dom/by-id "autocomplete-menu")]
-    (dom/destroy! (dc/sel "#autocomplete-menu li"))
-    (dom/remove-class! ac-menu "hidden")
-    (dom/append! (dom/by-id "autocomplete-menu") new-response)))
+  (onto-chan @completions-ref [(mapv (juxt :result :result) messages)])
+  (reset! completions-ref (chan)))
 
 
 (defn dummy-fn [& _])
 
 (defn render-config []
   [[:transform-enable [:setup-search] enable-search]
-   [:value [:search :response] dummy-fn]])
+   [:value [:search :response] update-search-result]])

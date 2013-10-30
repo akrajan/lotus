@@ -23,20 +23,124 @@
         <script type="text/javascript" src="xpath.js"></script>
         <![endif]-->
 
+    <!-- <\!-- MathJax -\-> -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+      tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+      }
+      });
+    </script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    <!-- Typekit -->
+
+        <script type="text/javascript" src="http://use.typekit.com/jpd0pfm.js"></script>
+        <script type="text/javascript">try{Typekit.load();}catch(e){}</script>
   </head>
 
   <body>
+	<style>
+	  .hidden {
+	  display: none;
+	  }
+
+	  #post ul,
+	  #post li {
+	  list-style: none;
+	  }
+	  #post li {
+	  list-indent: -10px;
+	  }
+
+	  #ac-ex0 {
+	  margin: 20px 0;
+	  height: 75px;
+	  background-color: #efefef;
+	  padding: 10px;
+	  }
+
+	  .ac-container .combo-box {
+	  position: relative;
+	  }
+
+	  #autocomplete-menu {
+	  position: relative;
+	  width: 460px;
+	  padding: 5px;
+	  right: 0px;
+	  top: 25px;
+	  z-index: 999;
+	  }
+
+	  #ac-ex0 input {
+	  width: 460px;
+	  padding: 5px;
+	  font-size: 15px;
+	  font-family: inconsolata;
+	  height: 30px;
+	  box-sizing: border-box;
+	  -moz-box-sizing: border-box;
+	  -webkit-box-sizing: border-box;
+	  }
+
+	  #ac-ex0 label {
+	  font-family: inconsolata;
+	  width: 100px;
+	  display: inline-block;
+	  text-align: right;
+	  }
+
+	  #ac-ex0 .section {
+	  margin-bottom: 10px;
+	  }
+
+	  #ac-ex0 ul {
+	  list-style: none;
+	  background-color: white;
+	  margin: 0;
+	  font-family: inconsolata;
+	  border-top: 1px solid #ccc;
+	  border-left: 1px solid #ccc;
+	  border-right: 1px solid #ccc;
+	  box-sizing: border-box;
+	  -moz-box-sizing: border-box;
+	  -webkit-box-sizing: border-box;
+	  box-shadow: 0px 4px 4px rgb(220,220,220);
+	  user-select: none
+	  -webkit-user-select: none;
+	  -moz-user-select: none;
+	  }
+
+	  #ac-ex0 li {
+	  cursor: pointer;
+	  list-style: none;
+	  padding: 3px 0 3px 8px;
+	  margin: 0;
+	  border-bottom: 1px solid #ccc;
+	  }
+
+	  #ac-ex0 li.highlighted {
+	  background-color: #ccccff;
+	  }
+	</style>
+      <div id="ac-ex0">
+	<div class="ac-container">
+          <div class="section">
+            <label>Some Query:</label>
+            <span class="combo-box">
+              <input id="autocomplete" type="text"/>
+              <ul id="autocomplete-menu" class="hidden"></ul>
+            </span>
+          </div>
+          <div class="section">
+            <label>Some field:</label>
+            <input type="text" />
+          </div>
+	</div>
+
     <div class="container">
-    <div id="ac-ex0">
-      <div class="ac-container">
-        <div class="section">
-          <label>Query:</label>
-          <span class="combo-box">
-            <input id="autocomplete" type="text"/>
-            <ul id="autocomplete-menu" class="hidden"></ul>
-          </span>
-        </div>
-      </div>
 
       <div id="content"></div>
 

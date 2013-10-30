@@ -1,6 +1,6 @@
 (ns lotus.utils.autocompleter.autocomplete.core
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [cljs.core.async :refer [>! <! alts! chan sliding-buffer put!]]
+  (:require [cljs.core.async :refer [>! <! alts! chan sliding-buffer put! timeout]]
             [lotus.utils.autocompleter.responsive.core :as resp]
             [lotus.utils.autocompleter.utils.dom :as dom]
             [lotus.utils.autocompleter.utils.helpers :as h]
@@ -75,9 +75,10 @@
 
              (and focused (= sc query))
              (do (.log js/console "FOCUSED & QUERIED")
-                 (let [[v c] (alts! [cancel ((:completions opts) (second v))])]
+                 (let [t (timeout 1500)
+                       [v c] (alts! [cancel ((:completions opts) (second v))])]
                    (.log js/console "inside focus")
-                   (if (or (= c cancel) (zero? (count v)))
+                   (if (or (= c cancel) (= c t) (zero? (count v)))
                      (do (.log js/console "inside focus A")
                          (-hide! menu)
                          (recur nil nil (not= v :blur)))
