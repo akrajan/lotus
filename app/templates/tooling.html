@@ -38,9 +38,6 @@
 
         <script type="text/javascript" src="http://use.typekit.com/jpd0pfm.js"></script>
         <script type="text/javascript">try{Typekit.load();}catch(e){}</script>
-  </head>
-
-  <body>
 	<style>
 	  .hidden {
 	  display: none;
@@ -66,9 +63,8 @@
 	  }
 
 	  #autocomplete-menu {
-	  position: relative;
-	  width: 460px;
-	  padding: 5px;
+	  position: absolute;
+	  left: 0px;
 	  right: 0px;
 	  top: 25px;
 	  z-index: 999;
@@ -125,22 +121,23 @@
 	  background-color: #ccccff;
 	  }
 	</style>
+
+  </head>
+
+  <body>
+
+    <div class="container">
       <div id="ac-ex0">
 	<div class="ac-container">
           <div class="section">
-            <label>Some Query:</label>
-            <span class="combo-box">
+            <label>My Query:</label>
+            <div class="combo-box">
               <input id="autocomplete" type="text"/>
               <ul id="autocomplete-menu" class="hidden"></ul>
-            </span>
-          </div>
-          <div class="section">
-            <label>Some field:</label>
-            <input type="text" />
+            </div>
           </div>
 	</div>
-
-    <div class="container">
+      </div>
 
       <div id="content"></div>
 
