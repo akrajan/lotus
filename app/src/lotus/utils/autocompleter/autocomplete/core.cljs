@@ -215,21 +215,21 @@
         (fn [e] false)))
     (-set-text! input "")
     (autocompleter*
-      {:focus (r/always :focus (r/listen input :focus))
-       :query (r/throttle* (r/distinct filtered) throttle (chan) query-ctrl)
-       :query-ctrl query-ctrl
-       :select (html-menu-events input menu selection-state)
-       :cancel (r/fan-in
-                 [removed
-                  (r/always :blur
-                    (if-not (less-than-ie9?)
-                      (r/listen input :blur)
-                      (ie-blur input menu selection-state)))])
-       :input input
-       :menu menu
-       :menu-proc menu-proc
-       :completions completions
-       :selection-state selection-state})))
+     {:focus (r/always :focus (r/listen input :focus))
+      :query (r/throttle* (r/distinct filtered) throttle (chan) query-ctrl)
+      :query-ctrl query-ctrl
+      :select (html-menu-events input menu selection-state)
+      :cancel (r/fan-in
+               [removed
+                (r/always :blur
+                          (if-not (less-than-ie9?)
+                            (r/listen input :blur)
+                            (ie-blur input menu selection-state)))])
+      :input input
+      :menu menu
+      :menu-proc menu-proc
+      :completions completions
+      :selection-state selection-state})))
 
 ;; ;; =============================================================================
 ;; ;; Example
@@ -240,7 +240,7 @@
      (let [completions (nth response 1)]
        (mapv vector
              completions
-             (repeat "hello"))))))
+             completions)))))
 
 ;; ;; (defn ^:export main []
 ;; ;;   (let [ac (html-autocompleter

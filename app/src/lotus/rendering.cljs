@@ -10,7 +10,7 @@
             [io.pedestal.app.render.push.templates :as templates]
             [io.pedestal.app.render.push.handlers.automatic :as d])
   (:require-macros [lotus.html-templates :as html-templates]
-                   [cljs.core.async.macros :refer [go]]))
+                   [cljs.core.async.macros :refer [go go-loop]]))
 
 (def templates (html-templates/lotus-templates))
 
@@ -44,16 +44,21 @@
       (p/put-message input-queue m))
     @completions-ref))
 
-(defn enable-search [r [_ _ _ messages] input-queue]
+(defn enable-autocompletion [r [_ _ _ messages] input-queue]
   (.log js/console "inside enable-search")
   (let [ac (autocomplete/html-autocompleter
             (dom/by-id "autocomplete")
             (dom/by-id "autocomplete-menu")
-            #(go [["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"]])
+            autocomplete/wikipedia-search
+;            #(go [["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"]])
             750)]
-    (.log js/console "before go block")
-    (go (while true
-          (<! ac)))))
+    (go
+     (while true
+       (let [search-text (<! ac)]
+         (.log js/console "Final selection: " search-text)
+         (doseq [m (msgs/fill :search-with messages {"search-text" search-text})]
+           (.log js/console "hello world")
+           (p/put-message input-queue m)))))))
 
 (defn update-search-result [r [_ _ _ messages] input-queue]
   (onto-chan @completions-ref [(mapv (juxt :result :result) messages)])
@@ -63,5 +68,5 @@
 (defn dummy-fn [& _])
 
 (defn render-config []
-  [[:transform-enable [:setup-search] enable-search]
+  [[:transform-enable [:setup-search] enable-autocompletion]
    [:value [:search :response] update-search-result]])

@@ -14,6 +14,7 @@
   (:search-text inputs))
 
 (defn search-with [search-key]
+  (.log js/console "Inside search-with: " search-key)
   [{msg/type :search-with msg/topic [:search :text] :value search-key}])
 
 (defn handle-search-response [old inputs]
