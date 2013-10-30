@@ -1,6 +1,6 @@
 (ns lotus.utils.autocompleter.autocomplete.core
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [cljs.core.async :refer [>! <! alts! chan sliding-buffer put! timeout]]
+  (:require [cljs.core.async :refer [>! <! alts! chan sliding-buffer put! timeout close!]]
             [lotus.utils.autocompleter.responsive.core :as resp]
             [lotus.utils.autocompleter.utils.dom :as dom]
             [lotus.utils.autocompleter.utils.helpers :as h]
@@ -51,45 +51,50 @@
         [query raw] (r/split r/throttle-msg? query)]
     (go (loop [view-items nil
                data-items nil
-               focused false]
-          (let [[v sc] (alts! [raw cancel focus query select])]
+               focused false
+               result-channel (chan)]
+          
+          (let [[v sc] (alts! [raw cancel focus query select result-channel])]
             (.log js/console "focused = " focused "view-items = " view-items)
             (cond
              (= sc raw) (.log js/console "raw " " v =" (str v))
              (= sc channel) (.log js/console "cancel"" v =" (str v))
              (= sc focus) (.log js/console "focus"" v =" (str v))
              (= sc query) (.log js/console "query"" v =" (str v))
-             (= sc select) (.log js/console "select"" v =" (str v)))
+             (= sc select) (.log js/console "select"" v =" (str v))
+             (= sc result-channel) (.log js/console "result-channel"" v =" (str v)))
             
             (cond
              (= sc focus)
              (do
                (.log js/console "inside focus")
-               (recur view-items data-items true))
+               (recur view-items data-items true result-channel))
 
              (= sc cancel)
              (do (.log js/console "inside cancel")
                  (-hide! menu)
                  (>! (:query-ctrl opts) (h/now))
-                 (recur view-items data-items (not= v :blur)))
+                 (recur view-items data-items (not= v :blur) result-channel))
 
              (and focused (= sc query))
              (do (.log js/console "FOCUSED & QUERIED")
-                 (let [t (timeout 1500)
-                       [v c] (alts! [cancel ((:completions opts) (second v))])]
-                   (.log js/console "inside focus")
-                   (if (or (= c cancel) (= c t) (zero? (count v)))
-                     (do (.log js/console "inside focus A")
-                         (-hide! menu)
-                         (recur nil nil (not= v :blur)))
-                     (do (.log js/console "inside focus B")
-                         (-show! menu)
-                         (let [view-data (map first v)
-                               select-data (map second v)]
-                           (.log js/console "view-data = " (str view-data))
-                           (.log js/console "select-data = " (str select-data))
-                           (-set-items! menu view-data)
-                           (recur view-data select-data focused))))))
+                 ((:completions opts) (second v) result-channel)
+                 (recur view-data select-data focused result-channel))
+
+             (and (= sc result-channel) (nil? v))
+             (do
+               (.log js/console "inside result-channel: " view-data)
+               (recur view-data select-data focused (chan)))
+
+             (and focused (= sc result-channel) (not (zero? (count v))))
+             (do (.log js/console "inside focus B")
+                 (-show! menu)
+                 (let [view-data (map first v)
+                       select-data (map second v)]
+                   (.log js/console "view-data = " (str view-data))
+                   (.log js/console "select-data = " (str select-data))
+                   (-set-items! menu view-data)
+                   (recur view-data select-data focused (chan))))
 
              (and view-items (= sc select))
              (let [_ (reset! (:selection-state opts) true)
@@ -103,14 +108,14 @@
                (reset! (:selection-state opts) false)
                (-hide! menu)
                (if (= choice ::cancel)
-                 (recur nil nil (not= v :blur))
+                 (recur nil nil (not= v :blur)  result-channel)
                  (let [[view-select data-select] choice]
                    (-set-text! (:input opts) view-select)
                    (>! out data-select)
-                   (recur nil nil focused))))
+                   (recur nil nil focused  result-channel))))
 
              :else
-             (recur view-items data-items focused)))))
+             (recur view-items data-items focused  result-channel)))))
     out))
 
 

@@ -38,19 +38,30 @@
 
 (def completions-ref (atom (chan)))
 
-(defn get-completions [messages input-queue]
-  (fn [query]
-    (doseq [m (msgs/fill :search-with messages {"search-text" query})]
-      (p/put-message input-queue m))
-    @completions-ref))
+;; (defn get-completions [messages input-queue]
+;;   ;; (fn [query]
+;;   ;;   (doseq [m (msgs/fill :search-with messages {"search-text" query})]
+;;   ;;     (p/put-message input-queue m))
+;;   ;;   @completions-ref)
+;;   )
+
+(defn get-completions [query completion-ch]
+  (.log js/console "Get-completions called!")
+  (let [server-completions [["New Arun" "AKR"] ["New Arun" "AKR"] ["New Arun" "AKR"] ["New Arun" "AKR"] ["New Arun" "AKR"]]]
+    (.log js/console "server-completions: " server-completions)
+    (go
+     (>! completion-ch server-completions)
+     (close! completion-ch))))
 
 (defn enable-autocompletion [r [_ _ _ messages] input-queue]
   (.log js/console "inside enable-search")
   (let [ac (autocomplete/html-autocompleter
             (dom/by-id "autocomplete")
             (dom/by-id "autocomplete-menu")
-            autocomplete/wikipedia-search
-;            #(go [["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"]])
+;            autocomplete/wikipedia-search
+           get-completions
+           (fn [& _]
+             (go [["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"]]))
             750)]
     (go
      (while true
