@@ -1,6 +1,6 @@
 (ns lotus.utils.autocompleter.autocomplete.core
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [cljs.core.async :refer [>! <! alts! chan sliding-buffer put! timeout]]
+  (:require [cljs.core.async :refer [>! <! alts! chan sliding-buffer put!]]
             [lotus.utils.autocompleter.responsive.core :as resp]
             [lotus.utils.autocompleter.utils.dom :as dom]
             [lotus.utils.autocompleter.utils.helpers :as h]
@@ -26,10 +26,8 @@
 
 (defn menu-proc
   ([select cancel menu view-data]
-  (.log js/console "inside menu-proc(a)")
      (menu-proc select cancel menu view-data view-data))
   ([select cancel menu view-data selection-data]
-  (.log js/console "inside menu-proc(b)")
      (let [ctrl (chan)
            sel  (->> (resp/selector (resp/highlighter select menu ctrl)
                                     menu
@@ -40,56 +38,41 @@
        (go (let [[v sc] (alts! [cancel sel])]
              (do (>! ctrl :exit)
                  (if (or (= sc cancel)
-                         (= v ::resp/none))
+                         (= (first v) :lotus.utils.autocompleter.responsive.core/none))
                    ::cancel
                    v)))))))
 
 
 (defn autocompleter* [{:keys [focus query select cancel menu] :as opts}]
-  (.log js/console "inside autocompleter*")
+  (.log js/console "Inside right autocompleter")
   (let [out (chan)
         [query raw] (r/split r/throttle-msg? query)]
     (go (loop [view-items nil
                data-items nil
                focused false]
           (let [[v sc] (alts! [raw cancel focus query select])]
-            (.log js/console "focused = " focused "view-items = " view-items)
-            (cond
-             (= sc raw) (.log js/console "raw " " v =" (str v))
-             (= sc channel) (.log js/console "cancel"" v =" (str v))
-             (= sc focus) (.log js/console "focus"" v =" (str v))
-             (= sc query) (.log js/console "query"" v =" (str v))
-             (= sc select) (.log js/console "select"" v =" (str v)))
-            
             (cond
              (= sc focus)
-             (do
-               (.log js/console "inside focus")
-               (recur view-items data-items true))
+             (recur view-items data-items true)
 
              (= sc cancel)
-             (do (.log js/console "inside cancel")
-                 (-hide! menu)
+             (do (-hide! menu)
                  (>! (:query-ctrl opts) (h/now))
                  (recur view-items data-items (not= v :blur)))
 
              (and focused (= sc query))
-             (do (.log js/console "FOCUSED & QUERIED")
-                 (let [t (timeout 1500)
-                       [v c] (alts! [cancel ((:completions opts) (second v))])]
-                   (.log js/console "inside focus")
-                   (if (or (= c cancel) (= c t) (zero? (count v)))
-                     (do (.log js/console "inside focus A")
-                         (-hide! menu)
-                         (recur nil nil (not= v :blur)))
-                     (do (.log js/console "inside focus B")
-                         (-show! menu)
-                         (let [view-data (map first v)
-                               select-data (map second v)]
-                           (.log js/console "view-data = " (str view-data))
-                           (.log js/console "select-data = " (str select-data))
-                           (-set-items! menu view-data)
-                           (recur view-data select-data focused))))))
+             (let [[v c] (alts! [cancel ((:completions opts) (second v))])]
+               (if (or (= c cancel) (zero? (count v)))
+                 (do (-hide! menu)
+                     (recur nil nil (not= v :blur)))
+                 (do
+                   (-show! menu)
+                   (let [view-data (map first v)
+                         select-data (map second v)]
+                     (.log js/console "view-data = " (str view-data))
+                     (.log js/console "select-data = " (str select-data))
+                    (-set-items! menu view-data)
+                    (recur view-data select-data focused)))))
 
              (and view-items (= sc select))
              (let [_ (reset! (:selection-state opts) true)
@@ -115,7 +98,6 @@
 
 
 (defn less-than-ie9? []
-  (.log js/console "inside less-than-ie9?")
   (and ua/IE (not (ua/isVersion 9))))
 
 (extend-type js/HTMLInputElement
@@ -139,7 +121,6 @@
       (dom/set-html! list))))
 
 (defn menu-item-event [menu input type]
-  (.log js/console "inside menu-item-event")
   (->> (r/listen menu type
          (fn [e]
            (when (dom/in? e menu)
@@ -153,7 +134,6 @@
           (h/index-of (dom/by-tag-name menu "li") li))))))
 
 (defn html-menu-events [input menu allow-tab?]
-  (.log js/console "inside html-menu-events")
   (r/fan-in
     [;; keyboard menu controls, tab special handling
      (->> (r/listen input :keydown
@@ -178,13 +158,11 @@
        (r/always :select))]))
 
 (defn relevant-keys [kc]
-  (.log js/console "inside relevant-keys")
   (or (= kc 8)
       (and (> kc 46)
            (not (#{91 92 93} kc)))))
 
 (defn html-input-events [input]
-  (.log js/console "inside html-input-events")
   (->> (r/listen input :keydown)
     (r/remove (fn [e] (.-platformModifierKey e)))
     (r/map resp/key-event->keycode)
@@ -193,7 +171,6 @@
     (r/split #(not (string/blank? %)))))
 
 (defn ie-blur [input menu selection-state]
-  (.log js/console "inside ie-blur")
   (let [out (chan)]
     (events/listen input goog.events.EventType.KEYDOWN
       (fn [e]
@@ -206,7 +183,6 @@
     out))
 
 (defn html-autocompleter [input menu completions throttle]
-  (.log js/console "inside html-autocompleter")
   (let [selection-state (atom false)
         query-ctrl (chan)
         [filtered removed] (html-input-events input)]
@@ -215,24 +191,24 @@
         (fn [e] false)))
     (-set-text! input "")
     (autocompleter*
-     {:focus (r/always :focus (r/listen input :focus))
-      :query (r/throttle* (r/distinct filtered) throttle (chan) query-ctrl)
-      :query-ctrl query-ctrl
-      :select (html-menu-events input menu selection-state)
-      :cancel (r/fan-in
-               [removed
-                (r/always :blur
-                          (if-not (less-than-ie9?)
-                            (r/listen input :blur)
-                            (ie-blur input menu selection-state)))])
-      :input input
-      :menu menu
-      :menu-proc menu-proc
-      :completions completions
-      :selection-state selection-state})))
+      {:focus (r/always :focus (r/listen input :focus))
+       :query (r/throttle* (r/distinct filtered) throttle (chan) query-ctrl)
+       :query-ctrl query-ctrl
+       :select (html-menu-events input menu selection-state)
+       :cancel (r/fan-in
+                 [removed
+                  (r/always :blur
+                    (if-not (less-than-ie9?)
+                      (r/listen input :blur)
+                      (ie-blur input menu selection-state)))])
+       :input input
+       :menu menu
+       :menu-proc menu-proc
+       :completions completions
+       :selection-state selection-state})))
 
-;; ;; =============================================================================
-;; ;; Example
+;; =============================================================================
+;; Example
 
 (defn wikipedia-search [query]
   (go
@@ -240,13 +216,12 @@
      (let [completions (nth response 1)]
        (mapv vector
              completions
-             completions)))))
+             (repeat "hello"))))))
 
-;; ;; (defn ^:export main []
-;; ;;   (let [ac (html-autocompleter
-;; ;;             (dom/by-id "autocomplete")
-;; ;;             (dom/by-id "autocomplete-menu")
-;; ;;             wikipedia-search
-;; ;;             750)]
-;; ;;     (go (while true (.log js/console (<! ac))))))
+;; (let [ac (html-autocompleter
+;;            (dom/by-id "autocomplete")
+;;            (dom/by-id "autocomplete-menu")
+;;            wikipedia-search
+;;            750)]
+;;   (go (while true (.log js/console (<! ac)))))
 

@@ -45,28 +45,42 @@
     @completions-ref))
 
 (defn enable-autocompletion [r [_ _ _ messages] input-queue]
-  (.log js/console "inside enable-search")
+  (.log js/console "Inside enable-autocompletion")
   (let [ac (autocomplete/html-autocompleter
-            (dom/by-id "autocomplete")
-            (dom/by-id "autocomplete-menu")
-            autocomplete/wikipedia-search
-;            #(go [["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"]])
-            750)]
-    (go
-     (while true
-       (let [search-text (<! ac)]
-         (.log js/console "Final selection: " search-text)
-         (doseq [m (msgs/fill :search-with messages {"search-text" search-text})]
-           (.log js/console "hello world")
-           (p/put-message input-queue m)))))))
+           (dom/by-id "autocomplete")
+           (dom/by-id "autocomplete-menu")
+           autocomplete/wikipedia-search
+           750)]
+    (go (while true
+          (let [query-text (<! ac)]
+            (.log js/console "\n\n Search query = " query-text)
+            (doseq [m (msgs/fill :search-with messages {"search-text" query-text})]
+              (p/put-message input-queue m)))))))
+
+;; (defn enable-autocompletion [r [_ _ _ messages] input-queue]
+;;   (.log js/console "inside enable-search")
+;;   (let [ac (autocomplete/html-autocompleter
+;;             (dom/by-id "autocomplete")
+;;             (dom/by-id "autocomplete-menu")
+;;             autocomplete/wikipedia-search
+;; ;            #(go [["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"] ["Arun" "AKR"]])
+;;             750)]
+;;     (go
+;;      (while true
+;;        (let [search-text (<! ac)]
+;;          (.log js/console "Final selection: " search-text)
+;;          (doseq [m (msgs/fill :search-with messages {"search-text" search-text})]
+;;            (.log js/console "hello world")
+;;            (p/put-message input-queue m)))))))
 
 (defn update-search-result [r [_ _ _ messages] input-queue]
   (onto-chan @completions-ref [(mapv (juxt :result :result) messages)])
   (reset! completions-ref (chan)))
 
 
-(defn dummy-fn [& _])
+(defn dummy-fn [& _]
+  (.log js/console "dummy function called"))
 
 (defn render-config []
   [[:transform-enable [:setup-search] enable-autocompletion]
-   [:value [:search :response] update-search-result]])
+   [:value [:search :response] dummy-fn]])
